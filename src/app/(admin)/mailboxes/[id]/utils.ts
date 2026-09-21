@@ -19,7 +19,7 @@ export async function fetchMailbox(id: string): Promise<MailboxDetail> {
 
 export async function updateMailboxSettings(
 	id: string,
-	input: { displayName: string; useAllDomains: boolean },
+	input: { displayName: string; useAllDomains: boolean; type?: "personal" | "shared" },
 ): Promise<MailboxDetail> {
 	const res = await authFetch(`/api/mailboxes/${id}`, {
 		method: "PATCH",

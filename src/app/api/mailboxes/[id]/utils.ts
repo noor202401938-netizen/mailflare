@@ -41,5 +41,6 @@ export function getMailboxUpdateValues(input: MailboxUpdateValues): MailboxUpdat
 	if ("autoReplySubject" in input) values.autoReplySubject = input.autoReplySubject?.trim() || "Out of office";
 	if ("autoReplyBody" in input) values.autoReplyBody = input.autoReplyBody?.trim() || "";
 	if ("useAllDomains" in input) values.useAllDomains = input.useAllDomains;
+	if ("type" in input && input.type) values.type = input.type;
 	return values;
 }

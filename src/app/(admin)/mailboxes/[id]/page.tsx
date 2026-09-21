@@ -38,6 +38,7 @@ export default function MailboxSettingsPage() {
   const qc = useQueryClient();
   const [displayName, setDisplayName] = useState("");
   const [useAllDomains, setUseAllDomains] = useState(true);
+  const [mailboxType, setMailboxType] = useState<"personal" | "shared">("personal");
   const [selectedUserId, setSelectedUserId] = useState("");
   const [aliasLocalPart, setAliasLocalPart] = useState("");
   const [aliasDomainId, setAliasDomainId] = useState("");
@@ -52,15 +53,17 @@ export default function MailboxSettingsPage() {
     if (mailbox.data) {
       setDisplayName(mailbox.data.displayName ?? "");
       setUseAllDomains(mailbox.data.useAllDomains);
+      setMailboxType(mailbox.data.type ?? "personal");
       setAliasDomainId((current) => current || mailbox.data.domainId);
     }
   }, [mailbox.data]);
 
   const updateName = useMutation({
-    mutationFn: () => updateMailboxSettings(mailboxId, { displayName, useAllDomains }),
+    mutationFn: () => updateMailboxSettings(mailboxId, { displayName, useAllDomains, type: mailboxType }),
     onSuccess: (updatedMailbox) => {
       qc.setQueryData(["mailbox", mailboxId], updatedMailbox);
       qc.invalidateQueries({ queryKey: ["mailboxes"] });
+      qc.invalidateQueries({ queryKey: ["mailbox", mailboxId, "access"] });
     },
   });
 
@@ -129,8 +132,10 @@ export default function MailboxSettingsPage() {
           )}
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {mailbox.data?.type === "shared" && (
-            <Badge variant="secondary">Shared</Badge>
+          {mailbox.data?.type === "shared" ? (
+            <Badge variant="secondary" className="border-blue-200 bg-blue-50 text-blue-700">Shared</Badge>
+          ) : (
+            <Badge variant="secondary">Personal</Badge>
           )}
           {mailbox.data?.isPrimary && (
             <Badge variant="secondary">Primary</Badge>
@@ -170,6 +175,25 @@ export default function MailboxSettingsPage() {
               placeholder={mailbox.data?.localPart ?? "Mailbox name"}
               disabled={mailbox.isLoading || updateName.isPending}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="mailboxType">Mailbox Type</Label>
+            <Select
+              id="mailboxType"
+              value={mailboxType}
+              onChange={(event) => setMailboxType(event.target.value as "personal" | "shared")}
+              disabled={mailbox.isLoading || updateName.isPending}
+              className="h-10 text-sm"
+            >
+              <option value="personal">Personal Mailbox (Private to owner)</option>
+              <option value="shared">Shared Mailbox (Team members can access &amp; send)</option>
+            </Select>
+            <p className="text-xs text-neutral-500">
+              {mailboxType === "shared"
+                ? "Team members added under Shared access below can read, receive, and send emails from this address."
+                : "Only the mailbox owner has access to this address."}
+            </p>
           </div>
           <label className="flex items-start gap-3 rounded-xl bg-neutral-50 p-4">
             <Checkbox
@@ -293,7 +317,7 @@ export default function MailboxSettingsPage() {
         </CardContent>
       </Card>
 
-      {mailbox.data?.type === "shared" && (
+      {mailbox.data?.type === "shared" ? (
         <Card className="rounded-3xl border-0 bg-white p-6">
           <CardHeader className="py-0">
             <CardTitle>Shared access</CardTitle>
@@ -372,7 +396,16 @@ export default function MailboxSettingsPage() {
             )}
           </CardContent>
         </Card>
-      )}
+      ) : mailboxType === "shared" ? (
+        <Card className="rounded-3xl border border-dashed border-blue-200 bg-blue-50/60 p-6">
+          <CardHeader className="py-0">
+            <CardTitle className="text-blue-900">Shared access</CardTitle>
+            <CardDescription className="text-blue-700">
+              You selected &quot;Shared Mailbox&quot;. Click &quot;Save changes&quot; above to enable shared access and assign team members.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      ) : null}
       <Card className="rounded-3xl border-0 bg-white p-6">
         <CardHeader className="py-0">
           <CardTitle className="text-red-700">Danger zone</CardTitle>

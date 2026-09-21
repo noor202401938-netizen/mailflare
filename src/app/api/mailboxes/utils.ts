@@ -9,7 +9,7 @@ import type { SessionUser } from "@/lib/auth/types";
 
 export async function ensurePersonalMailbox(env: CloudflareEnv, db: AppDatabase, user: SessionUser) {
 	const current = await listAccessibleMailboxes(db, user);
-	if (current.some((mailbox) => mailbox.userId === user.id && mailbox.type === "personal")) return current;
+	if (current.some((mailbox) => mailbox.userId === user.id)) return current;
 
 	const [localPart, hostname] = user.email.toLowerCase().split("@");
 	if (!localPart || !hostname) return current;

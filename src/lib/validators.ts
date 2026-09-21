@@ -185,6 +185,7 @@ export const updateMailboxSchema = z.object({
 	autoReplySubject: z.string().trim().max(200).optional(),
 	autoReplyBody: z.string().max(10_000).optional(),
 	useAllDomains: z.boolean().optional(),
+	type: z.enum(["personal", "shared"]).optional(),
 });
 
 export const createMailboxAliasSchema = z.object({
