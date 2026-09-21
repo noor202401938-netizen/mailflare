@@ -1,12 +1,18 @@
 import Link from "next/link";
-import { Globe2, Mail, Palette, Users } from "lucide-react";
+import { BookOpen, Globe2, Mail, Palette, Sparkles, Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const sections = [
 	{
+		href: "/guide",
+		title: "Setup & Usage Guide",
+		description: "Step-by-step instructions for domains, mailboxes, and team accounts.",
+		icon: BookOpen,
+	},
+	{
 		href: "/mailboxes",
 		title: "Mailboxes",
-		description: "Create and manage mailbox addresses.",
+		description: "Create and manage personal and shared mailboxes.",
 		icon: Mail,
 	},
 	{

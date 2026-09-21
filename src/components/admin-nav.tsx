@@ -5,6 +5,7 @@ import {
   DatabaseBackup,
   Globe2,
   Activity,
+  BookOpen,
   Mail,
   Settings,
   Palette,
@@ -22,7 +23,10 @@ import { useSidebar } from "./sidebar-state";
 const sections = [
   {
     // label: "Overview",
-    links: [{ href: "/admin", label: "Overview", icon: Settings }],
+    links: [
+      { href: "/admin", label: "Overview", icon: Settings },
+      { href: "/guide", label: "Guide", icon: BookOpen },
+    ],
   },
   {
     label: "Email",
