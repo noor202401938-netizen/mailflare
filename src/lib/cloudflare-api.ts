@@ -69,10 +69,18 @@ export async function getEmailRoutingDns(
 	env: CloudflareEnv,
 	zoneId: string,
 ): Promise<{ records: CfDnsRecord[]; missing: CfDnsRecord[] }> {
-	const result = await cfRequest<{
-		record?: CfDnsRecord[];
-		errors?: { missing?: CfDnsRecord }[];
-	}>(env, `/zones/${zoneId}/email/routing/dns`);
+	const result = await cfRequest<
+		| { record?: CfDnsRecord[]; errors?: { missing?: CfDnsRecord }[] }
+		| CfDnsRecord[]
+	>(env, `/zones/${zoneId}/email/routing/dns`);
+
+	if (Array.isArray(result)) {
+		return {
+			records: result,
+			missing: [],
+		};
+	}
+
 	return {
 		records: result.record ?? [],
 		missing: (result.errors ?? [])

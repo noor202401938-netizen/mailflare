@@ -13,14 +13,10 @@ export default function DomainDnsDetails({
 	const audit = dns.audit;
 	const manual = domain.zoneId === "manual";
 	const subdomain = dns.sendingSubdomain;
-	const sendingOk = subdomain ? dns.sendingEnabled : manual && domain.sendingEnabled;
+	const sendingOk = subdomain ? dns.sendingEnabled : true;
 	const sendingLabel = subdomain
 		? `Sending for ${subdomain.name} is ${dns.sendingEnabled ? "enabled" : "disabled"}`
-		: manual
-			? domain.sendingEnabled
-				? "Email sending is configured"
-				: "Email sending is not configured"
-			: "Sending has not configured for this domain";
+		: "Configured via SMTP relay (Brevo)";
 	const routingOk = dns.routing.missing.length === 0 && (dns.routing.records.length > 0 || domain.routingEnabled);
 	const routingLabel = routingOk
 		? "Email routing is configured"
