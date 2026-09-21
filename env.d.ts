@@ -31,3 +31,15 @@ interface CloudflareEnv {
 	/** Public origin of this install (https://mail.example.com) when it sits behind a proxy. */
 	APP_URL?: string;
 }
+
+declare module "@radix-ui/react-slot" {
+	import * as React from "react";
+	export interface SlotProps extends React.HTMLAttributes<HTMLElement> {
+		children?: React.ReactNode;
+	}
+	export const Slot: React.ForwardRefExoticComponent<SlotProps & React.RefAttributes<HTMLElement>>;
+	export interface SlottableProps {
+		children: React.ReactNode;
+	}
+	export const Slottable: React.FC<SlottableProps>;
+}
