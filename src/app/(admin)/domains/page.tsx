@@ -55,8 +55,10 @@ export default function DomainsPage() {
     },
   });
 
+  const [mxConflict, setMxConflict] = useState(false);
+
   const create = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (replaceMx: boolean = false) => {
       const normalized = hostname.toLowerCase().trim();
       let checkedDomain = domainCheck;
       let sendingRequested = enableSending;
@@ -66,7 +68,7 @@ export default function DomainsPage() {
           throw new Error(result.error ?? "Domain check failed");
         }
         checkedDomain = result.domain;
-        sendingRequested = true;
+        sendingRequested = enableSending;
         setDomainCheck(result.domain);
         setEnableSending(sendingRequested);
       }
@@ -79,10 +81,16 @@ export default function DomainsPage() {
           hostname: checkedDomain.hostname,
           enableRouting: true,
           enableSending: sendingRequested,
+          replaceMxRecords: replaceMx,
         }),
       });
-      const json = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(json.error ?? "Failed");
+      const json = (await res.json()) as { error?: string; code?: string };
+      if (!res.ok) {
+        if (json.code === "MX_RECORDS_CONFLICT" || json.error?.includes("Existing MX records")) {
+          setMxConflict(true);
+        }
+        throw new Error(json.error ?? "Failed");
+      }
       return json;
     },
     onSuccess: () => {
@@ -90,6 +98,7 @@ export default function DomainsPage() {
       setDomainCheck(null);
       setEnableSending(false);
       setDomainCheckError(null);
+      setMxConflict(false);
       setCreateOpen(false);
       qc.invalidateQueries({ queryKey: ["domains"] });
     },
@@ -279,32 +288,51 @@ export default function DomainsPage() {
                   {domainCheckError}
                 </p>
               )}
-              {create.isError && (
-                <div className="space-y-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-                  <p>{(create.error as Error).message}</p>
-                  <div className="space-y-2">
-                    <p className="font-medium">
-                      Check that your Cloudflare API token has these permissions:
-                    </p>
-                    <ul className="list-disc space-y-1 pl-5">
-                      <li>
-                        All accounts — DNS Settings:Edit, Email Routing
-                        Addresses:Edit; Email Sending:Edit for outbound mail
-                      </li>
-                      <li>
-                        All zones — DNS Settings:Edit, Email Routing Rules:Edit,
-                        Zone Settings:Edit, DNS:Edit
-                      </li>
-                    </ul>
-                  </div>
+              {mxConflict ? (
+                <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">
+                  <p className="text-sm font-semibold">Existing MX Records Detected</p>
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    Cloudflare detected existing MX records on {hostname}. Continuing will delete them and configure Cloudflare Email Routing so Mailflare can receive your emails.
+                  </p>
+                  <Button
+                    type="button"
+                    onClick={() => create.mutate(true)}
+                    disabled={create.isPending}
+                    className="w-full bg-amber-600 hover:bg-amber-700 text-white"
+                  >
+                    {create.isPending ? "Replacing MX records..." : "Delete MX records & continue"}
+                  </Button>
                 </div>
+              ) : (
+                <>
+                  {create.isError && (
+                    <div className="space-y-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+                      <p>{(create.error as Error).message}</p>
+                      <div className="space-y-2">
+                        <p className="font-medium">
+                          Check that your Cloudflare API token has these permissions:
+                        </p>
+                        <ul className="list-disc space-y-1 pl-5">
+                          <li>
+                            All accounts — DNS Settings:Edit, Email Routing
+                            Addresses:Edit; Email Sending:Edit for outbound mail
+                          </li>
+                          <li>
+                            All zones — DNS Settings:Edit, Email Routing Rules:Edit,
+                            Zone Settings:Edit, DNS:Edit
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                  <Button
+                    onClick={() => create.mutate(false)}
+                    disabled={!hostname || domainChecking || create.isPending}
+                  >
+                    {create.isPending ? "Adding..." : "Add domain"}
+                  </Button>
+                </>
               )}
-              <Button
-                onClick={() => create.mutate()}
-                disabled={!hostname || domainChecking || create.isPending}
-              >
-                {create.isPending ? "Adding..." : "Add domain"}
-              </Button>
             </div>
           </DialogContent>
         </Dialog>
