@@ -82,6 +82,27 @@ The account id is the user id. Each Mailflare mailbox appears as a top-level JMA
 
 `Email/query` supports the `header` filter: `["Message-ID", "<id@example.com>"]` matches messages with that value, and `["Message-ID"]` matches any message that has the header. `Message-ID`, `In-Reply-To` and `References` are answered from stored columns; Message-IDs compare with or without angle brackets, and header names are case-insensitive. Any other header name returns an `unsupportedFilter` error rather than silently matching everything.
 
+## MCP (Model Context Protocol)
+
+Mailflare serves an MCP server so AI assistants (Claude, Claude Code, Cursor and other MCP clients) can read mail and draft or send it. It is stateless Streamable HTTP: `POST` JSON-RPC to the endpoint and get a JSON response; there is no SSE stream, so `GET` answers 405.
+
+Authenticate with an API key, either as `Authorization: Bearer <key>` (or Basic auth, like JMAP) at `/api/mcp`, or with the key as the last path segment, `/api/mcp/<key>`, for clients that cannot set headers, such as claude.ai custom connectors. A key in the URL can end up in proxy and access logs, so mint a dedicated key for it and revoke it if the URL leaks.
+
+Tools are filtered by the key's scopes:
+
+| Tool | Scope | What it does |
+| --- | --- | --- |
+| `list_mailboxes` | `read` | Mailboxes the key can read or send from, with ids and addresses |
+| `search_messages` | `read` | Newest-first summaries; `query` uses the search grammar below, plus `mailboxId`, `status`, `direction`, `limit` |
+| `get_message` | `read` | One message with its plain-text body (truncated at 20,000 characters) and attachment names |
+| `list_drafts` | `read` | Your drafts |
+| `create_draft` | `send` | Saves a draft in Drafts without sending; `replyToMessageId` sets threading headers |
+| `delete_draft` | `send` | Deletes one of your drafts |
+| `send_draft` | `send` | Sends a draft as stored, with its attachments, then removes it from Drafts |
+| `send_email` | `send` | Composes and sends immediately |
+
+`create_draft` and `send_email` pick the sending mailbox from `mailboxId`, else from the `from` address, else the only mailbox the key can send from. Sending goes through the same path as `POST /api/v1/send`, so mailbox permissions, the 50-recipient limit and sending-domain checks all apply. Tool failures come back as results with `isError: true` rather than JSON-RPC errors, so the client can show the reason.
+
 ## Password reset and two-factor authentication
 
 `POST /api/auth/password-reset/request` with `{ email }` always answers `200 { ok: true }`; when the account exists and has a recovery email, a single-use link valid for 30 minutes is mailed there. `POST /api/auth/password-reset/confirm` with `{ token, password }` sets the password and signs the account out everywhere.
